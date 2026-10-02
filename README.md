@@ -1,186 +1,354 @@
-﻿# Amazon India E-Commerce Sales, Product & Operations Analytics
+🛒 Amazon India E-Commerce Sales & Operations Analytics
+End-to-End Data Analytics Case Study using Python, SQL, Power BI & Excel
 
-[![Python](https://img.shields.io/badge/Python-3.14-blue?logo=python)](https://www.python.org/)
-[![Power BI](https://img.shields.io/badge/Power_BI-Desktop-yellow?logo=powerbi)](https://powerbi.microsoft.com/)
-[![SQL](https://img.shields.io/badge/SQL-ANSI%20Standard-orange?logo=postgresql)](https://www.postgresql.org/)
-[![Excel](https://img.shields.io/badge/Excel-Validation%20QA-green?logo=microsoftexcel)](https://www.microsoft.com/excel)
-[![Dataset](https://img.shields.io/badge/Kaggle-Dataset-blue?logo=kaggle)](https://www.kaggle.com/datasets/thedevastator/unlock-profits-with-e-commerce-sales-data)
+An end-to-end e-commerce analytics project analyzing 128,975 transaction line items and 120,378 distinct orders from an Amazon India marketplace dataset.
+The project covers the complete analytics workflow:
+Data Audit → Cleaning & ETL → Exploratory Data Analysis → Statistical Analysis → Star Schema Modeling → SQL Analytics → Power BI Dashboard → Business Insights & Recommendations
+📊 Project Overview
+This project analyzes Amazon India e-commerce operations across:
+- Sales and revenue performance
+- Product and SKU performance
+- Customer segments
+- B2B vs B2C sales
+- Geographic distribution
+- Fulfillment performance
+- Cancellation and return behavior
+- Shipping service levels
+- Revenue concentration and Pareto analysis
+The final deliverable is an interactive 6-page Power BI dashboard supported by Python EDA, SQL analysis, Excel validation, and a dimensional data model.
+🎯 Business Objectives
+The project aims to answer key business questions such as:
+- How much revenue is being generated?
+- What is the overall order and fulfillment performance?
+- Which products and categories drive revenue?
+- How concentrated is revenue across SKUs?
+- Which states and cities contribute the most sales?
+- How do Amazon and Merchant fulfillment compare?
+- Where is cancellation leakage occurring?
+- How does shipping service level affect cancellations?
+- What is the contribution of B2B customers?
+- Which products and regions are important for B2B sales?
+📌 Key Business Results
+Business Indicator	Verified Value
+💰 Gross Merchandise Value (GMV)	₹78,681,022.35
+💵 Net Realized Revenue	₹70,374,984.05
+🛍️ Distinct Orders	120,378
+📦 Transaction Line Items	128,975
+🚚 Fulfilled Orders	101,201
+❌ Cancellation Rate	14.35%
+🔄 Return / RTS Rate	1.65%
+🧾 Average Order Value	₹695.40
+🏢 B2B Revenue	₹558,924.38
+📈 B2B Revenue Share	0.79%
+📊 Revenue Concentration	18.5% of SKUs → 80% of Revenue
+🌍 Geographic Concentration	Top 3 States → 44.1% of Revenue
 
-> **An End-to-End Enterprise Data Analytics Case Study** analyzing **128,975 transactions** (~₹78.7M GMV) across Q2 2022 from Amazon India marketplace operations. Demonstrates rigorous data grain auditing, dimensional modeling (Star Schema), statistical hypothesis testing, an interactive 6-page Power BI dashboard, and 30 interview-grade SQL queries.
 
----
+🧱 Data Architecture
+A Star Schema was designed to avoid incorrect aggregation caused by the dataset's transaction-line grain.
+Data Grain
+1 row = 1 order line item
 
-## 📌 Executive Summary & Key Results
+Multiple rows can belong to the same order because a customer can purchase multiple products in a single order.
+Therefore, order-level metrics use:
+DISTINCTCOUNT(order_id)
+Star Schema
+                         ┌──────────────┐
+                         │   DimDate    │
+                         └──────┬───────┘
+                                │
+                                │
+┌──────────────┐         ┌─────▼─────────────┐
+│ DimProduct   │────────►│   FactOrderLine   │
+└──────────────┘         │    128,975 Rows   │
+                         └─────▲─────────────┘
+                                │
+┌──────────────┐                │
+│ DimGeography │────────────────┤
+└──────────────┘                │
+                                │
+┌──────────────┐                │
+│ DimStatus    │────────────────┘
+└──────────────┘
+Model Components
+Table	Purpose
+FactOrderLine	Transaction-level fact table
+DimDate	Continuous calendar
+DimProduct	Product and SKU attributes
+DimGeography	City and state information
+DimStatus	Standardized order-status groups
 
-| Business Indicator | Verified Value | Analytical Definition / Business Meaning |
-| :--- | :--- | :--- |
-| **Gross Merchandise Value (GMV)** | **₹78,681,022.35** | Total booked order revenue before operational leakage |
-| **Net Realized Revenue** | **₹70,374,984.05** | Actual fulfilled cashflow collected (**89.4% realization rate**) |
-| **Distinct Order Count** | **120,378** | Unique customer transactions (`DISTINCTCOUNT(order_id)`) |
-| **Total Transaction Line Items** | **128,975** | Row-level catalog items purchased (**1.071 items/order**) |
-| **Fulfilled Order Volume** | **101,201** (84.1%) | Successfully delivered / non-cancelled shipments |
-| **Order Cancellation Rate** | **14.35%** (17,277 orders) | Primary operational leakage (~₹8.3M trapped gross GMV) |
-| **Customer Return (RTS) Rate** | **1.65%** (1,985 orders) | Return-to-Seller rate across all courier channels |
-| **Average Order Value (AOV)** | **₹695.40** | Average realized basket value per fulfilled order |
-| **Catalog Concentration (Pareto)** | **18.5% SKUs $\rightarrow$ 80% Rev** | Top **1,332 SKUs** generate 80% of total revenue (**Class A**) |
-| **Geographic Concentration** | **Top 3 States $\rightarrow$ 44.1% Rev** | Maharashtra, Karnataka, and Telangana drive national volume |
-| **B2B Enterprise Contribution** | **₹558,924.38** (0.79% Rev) | Wholesale institutional sales with higher average basket size |
 
----
-
-## 🏗️ Analytics Architecture & Star Schema Model
-
-```mermaid
-flowchart TD
-    RawCSV["Raw Data Ingestion\n(Kaggle: Amazon Sale Report.csv\n128,975 rows)"] --> CleanPipeline["Data Audit & Cleaning Pipeline\n(clean_and_analyze.py)\nSnake_case • Dates • Statuses • Geography"]
-    
-    CleanPipeline --> StarSchema["Dimensional Data Modeling\n(Star Schema in data/processed/)"]
-    
-    StarSchema --> DimDate["DimDate\n(91 Days Calendar)"]
-    StarSchema --> DimProd["DimProduct\n(7,195 SKUs)"]
-    StarSchema --> DimGeo["DimGeography\n(14,437 Cities/States)"]
-    StarSchema --> DimStatus["DimStatus\n(20 Status Groups)"]
-    StarSchema --> FactOrder["FactOrderLine\n(128,975 Line Items)"]
-    
-    FactOrder --> PowerBI["Power BI Executive Dashboard\n(Amazon_Sales_Dashboard.pbix\n6 Pages • 18 DAX Measures)"]
-    FactOrder --> SQLQueries["30 SQL Interview Queries\n(sql/01_quality to 05_operations)"]
-    FactOrder --> PythonEDA["Python EDA & Statistics\n(Jupyter Notebook • 28 Cells\nChi-Square Test • Seaborn)"]
-    FactOrder --> ExcelQA["Excel QA Reconciliation\n(amazon_validation.xlsx\nControl Totals & PivotTables)"]
-```
-
-### The Data Grain Rule
-* **1 Row = 1 Order Line Item**, NOT an individual order.
-* Multiple rows frequently share the same `Order ID` due to multi-SKU basket purchases.
-* **Order metrics must always use `DISTINCTCOUNT(order_id)`** to prevent artificial inflation of transaction volume.
-
----
-
-## 📊 Power BI Dashboard Architecture (6 Pages)
-
-The project includes an executive-grade Power BI workbook (**[`powerbi/Amazon_Sales_Dashboard.pbix`](powerbi/Amazon_Sales_Dashboard.pbix)**) built with an Amazon brand palette (`#146EB4`, `#FF9900`, `#0F172A`), white floating cards, and 8px rounded borders:
-
-```
-┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│  PAGE 1: Executive Overview       │  PAGE 2: Sales Performance & Run-Rate                │
-│  - 5 KPI Scorecards with Deltas   │  - Daily Sales Run-Rate with 7-Day Moving Average    │
-│  - Monthly Revenue & AOV Combo    │  - Day-of-Week Revenue Seasonality                   │
-│  - Revenue Mix by Category Donut  │  - MoM Revenue Growth Bar Chart                      │
-│  - Top 10 States & Top 10 SKUs    │  - Category Volume vs Revenue Scatter Bubble         │
-├───────────────────────────────────┼──────────────────────────────────────────────────────┤
-│  PAGE 3: Product Merchandising    │  PAGE 4: Geographic Intelligence                     │
-│  - Pareto (80/20) Cumulative Curve│  - Full-Height India State Revenue Filled Map        │
-│  - Product Performance Matrix     │  - Top 15 Metro Cities Bar Chart                     │
-│  - Category x Size Heatmap Matrix │  - Category Preference Mix Across Top 5 States       │
-│  - AI Revenue Decomposition Tree  │  - Regional Concentration Index                      │
-├───────────────────────────────────┼──────────────────────────────────────────────────────┤
-│  PAGE 5: Operations & Logistics   │  PAGE 6: B2B vs B2C & Sales Channel Intelligence     │
-│  - Amazon FBA vs Merchant Volume  │  - B2B Wholesale vs Retail B2C Revenue Donut         │
-│  - FBA vs Merchant Cancellation % │  - Channel Revenue Comparison                        │
-│  - Order Status Funnel & Leakage  │  - B2B Product Category Demand Treemap               │
-│  - Shipping Service Level Bars    │  - Top 10 States for B2B Purchasing                  │
-└──────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🗄️ SQL Analysis Suite (30 Interview Queries)
-
-The **[`sql/`](sql/)** folder contains 30 interview-grade SQL queries organized into 5 operational modules:
-
-1. **[`01_quality.sql`](sql/01_quality.sql)** (Queries 1–6): Data grain audit, multi-line order ratios, duplicate detection, and control total reconciliation.
-2. **[`02_sales.sql`](sql/02_sales.sql)** (Queries 7–12): Daily sales run-rate, 7-day rolling moving averages (`AVG(...) OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)`), and MoM growth using `LAG()`.
-3. **[`03_product.sql`](sql/03_product.sql)** (Queries 13–18): Category contribution, Pareto 80/20 ABC classification using cumulative window sums (`SUM(net_revenue) OVER (ORDER BY net_revenue DESC)`), and apparel size demand matrices.
-4. **[`04_geography.sql`](sql/04_geography.sql)** (Queries 19–24): State revenue leaderboards, geographic market concentration, metro density, and state AOV variance vs national benchmark.
-5. **[`05_operations.sql`](sql/05_operations.sql)** (Queries 25–30): Amazon FBA vs Merchant comparison, shipping service level performance, operational leakage funnel, RTS rates, and at-risk product flags ($>25\%$ cancellation rate).
-
----
-
-## 💡 Top Business Insights & Recommendations
-
-### 1. Fix the 14.35% Order Cancellation Leakage
-* **Finding:** 17,277 orders were cancelled, trapping **₹8.3M in unrealized GMV**. Cancellations occur significantly more on Merchant self-ship orders than on Amazon FBA.
-* **Action:** Shift high-volume Merchant listings to **Amazon FBA (Fulfilment by Amazon)** to reduce fulfillment latency, and introduce automated WhatsApp/SMS order verification for Cash-on-Delivery orders.
-
-### 2. Protect Inventory on the "Hero Duo" (Set & Kurta)
-* **Finding:** *Set* (₹39.2M / 40.5%) and *Kurta* (₹21.3M / 28.5%) drive **nearly 70% of total revenue**.
-* **Action:** Establish automated safety stock alerts for the top 18.5% Pareto SKUs in these two categories to prevent stock-outs during peak shopping periods.
-
-### 3. Rebalance Apparel Production Ratios
-* **Finding:** Sizes **M, L, and XL** account for over 65% of fulfilled volume, while **XS, 5XL, and 6XL** represent long-tail demand with higher aging risk.
-* **Action:** Standardize batch manufacturing ratios to 3:3:2 (M:L:XL) and reduce upfront runs for outlier sizes to prevent inventory markdowns.
-
-### 4. Optimize Logistics for Western & Southern India
-* **Finding:** **Maharashtra (21.4%), Karnataka (13.7%), and Telangana (9.0%)** account for over 44% of total sales.
-* **Action:** Stage regional safety stock inside Mumbai, Bengaluru, and Hyderabad fulfillment centers to enable next-day Prime delivery and lower return rates.
-
----
-
-## 📁 Repository Structure
-
-```text
+📊 Power BI Dashboard
+The project contains a 6-page interactive Power BI dashboard.
+Page 1 — Executive Overview
+Focus: Overall business performance
+- KPI scorecards
+- Monthly Revenue & AOV
+- Revenue Mix by Category
+- Top States by Revenue
+- Top SKUs by Revenue
+- Interactive filters
+Page 2 — Sales Performance & Run-Rate
+Focus: Sales trends and revenue momentum
+- Daily Sales Run-Rate
+- 7-Day Moving Average
+- Day-of-Week Revenue Seasonality
+- Month-over-Month Revenue Growth
+- Category Volume vs Revenue
+Page 3 — Product Merchandising
+Focus: Product and SKU intelligence
+- Pareto 80/20 Revenue Analysis
+- Product Performance Matrix
+- Category × Size Analysis
+- Revenue Decomposition
+- SKU-level performance
+Page 4 — Geographic Intelligence
+Focus: Geographic sales distribution
+- India State Revenue Map
+- Top Metro Cities
+- Category Preference by State
+- Regional Concentration Analysis
+Page 5 — Operations & Logistics
+Focus: Fulfillment and operational performance
+- Amazon vs Merchant Fulfillment
+- Cancellation Rate by Fulfillment
+- Order Status Distribution
+- Shipping Service-Level Cancellation Analysis
+Page 6 — B2B vs B2C & Channel Intelligence
+Focus: Customer segments and B2B performance
+- B2B vs B2C Revenue
+- Revenue by Sales Channel
+- B2B Revenue by Sales Channel
+- B2B Product Category Demand
+- Top States for B2B Purchasing
+🧮 DAX & Power BI Analysis
+The Power BI model contains measures for important business KPIs, including:
+- Total Orders
+- Total Units Sold
+- Total Net Revenue
+- Average Order Value
+- Cancellation Rate
+- Return Rate
+- B2B Revenue
+- B2B Revenue Share
+- Monthly Revenue
+- Month-over-Month Growth
+- Product/SKU analysis
+- Operational performance
+Example: Order-Level Cancellation Rate
+Cancellation Rate =
+DIVIDE(
+    [Cancelled Orders],
+    [Total Orders],
+    0
+)
+Order-level metrics use distinct orders rather than transaction rows.
+🐍 Python Analysis
+Python was used for:
+- Data loading
+- Data cleaning
+- Missing-value analysis
+- Data-type validation
+- Duplicate detection
+- Exploratory Data Analysis
+- Revenue analysis
+- Product analysis
+- Geographic analysis
+- Statistical analysis
+- Visualization
+🗄️ SQL Analysis
+The project includes 30 SQL analytical queries organized into five modules.
+01 — Data Quality
+- Data grain auditing
+- Multi-line order analysis
+- Duplicate detection
+- Control-total reconciliation
+02 — Sales
+- Daily sales
+- Rolling averages
+- Month-over-Month growth
+- LAG()
+- Window functions
+03 — Product
+- Category contribution
+- Pareto / ABC classification
+- Cumulative revenue
+- Size-demand analysis
+04 — Geography
+- State rankings
+- Geographic concentration
+- Metro demand
+- AOV variance
+05 — Operations
+- Amazon vs Merchant performance
+- Shipping service levels
+- Cancellation analysis
+- Return-to-seller rates
+- At-risk products
+📗 Excel Validation
+Excel was used as an independent QA layer for:
+- Control totals
+- Pivot-table validation
+- Revenue reconciliation
+- Order-count validation
+- KPI verification
+💡 Key Business Insights
+1. Cancellation Leakage
+The overall cancellation rate is 14.35%, representing a significant gap between booked GMV and realized revenue.
+2. Revenue Concentration
+18.5% of SKUs generate approximately 80% of revenue, highlighting the importance of high-value products.
+3. Geographic Concentration
+The top three states contribute approximately 44.1% of total revenue:
+- Maharashtra
+- Karnataka
+- Telangana
+4. B2B Contribution
+B2B sales contribute approximately ₹558,924.38, representing 0.79% of total revenue.
+📈 Business Recommendations
+Fulfillment Optimization
+Investigate higher cancellation levels associated with Merchant fulfillment and evaluate whether selected high-volume listings could benefit from FBA.
+Inventory Prioritization
+Prioritize monitoring and inventory planning for high-revenue Pareto SKUs and major revenue-generating categories.
+Geographic Planning
+Use regional demand concentration to support inventory positioning and fulfillment planning.
+B2B Growth
+Identify high-performing B2B categories and states to evaluate opportunities for expanding institutional sales.
+🛠️ Technology Stack
+Data Analysis
+- Python
+- Pandas
+- NumPy
+- Matplotlib
+- Seaborn
+- Jupyter Notebook
+Business Intelligence
+- Microsoft Power BI
+- DAX
+- Power Query
+Database / Querying
+- SQL
+- CTEs
+- Window Functions
+- Aggregations
+- Ranking Functions
+Validation
+- Microsoft Excel
+- PivotTables
+- Control Totals
+📁 Repository Structure
 amazon-ecommerce-data-analyst/
+│
 ├── data/
 │   ├── raw/
-│   │   └── Amazon Sale Report.csv                        # Untouched raw dataset (128,975 rows)
+│   │   └── Amazon Sale Report.csv
+│   │
 │   └── processed/
-│       ├── FactOrderLine.csv                             # Star Schema Fact Table
-│       ├── DimProduct.csv                                # Dimension: 7,195 SKUs
-│       ├── DimGeography.csv                              # Dimension: 14,437 Cities/States
-│       ├── DimStatus.csv                                 # Dimension: 20 Status buckets
-│       ├── DimDate.csv                                   # Dimension: Continuous Calendar (91 Days)
-│       └── cleaned_amazon_sales.csv                      # Master flat table for single-table import
+│       ├── FactOrderLine.csv
+│       ├── DimProduct.csv
+│       ├── DimGeography.csv
+│       ├── DimStatus.csv
+│       ├── DimDate.csv
+│       └── cleaned_amazon_sales.csv
+│
 ├── notebooks/
-│   └── amazon_ecommerce_analysis_and_visualization.ipynb # Pre-executed 28-cell EDA Notebook (864 KB)
+│   └── amazon_ecommerce_analysis_and_visualization.ipynb
+│
 ├── powerbi/
-│   ├── Amazon_Sales_Dashboard.pbix                       # Production Power BI Workbook (5.12 MB)
-│   ├── dax_measures.dax                                  # Reference library of 18 DAX measures
-│   └── dashboard_construction_guide.md                   # Visual blueprint and layout documentation
+│   ├── Amazon_Sales_Dashboard.pbix
+│   ├── dax_measures.dax
+│   └── dashboard_construction_guide.md
+│
 ├── sql/
-│   ├── 01_quality.sql                                    # Q1–Q6: Data grain & reconciliation
-│   ├── 02_sales.sql                                      # Q7–Q12: Run rates, moving averages & MoM
-│   ├── 03_product.sql                                    # Q13–Q18: Pareto 80/20 & size cross-tab
-│   ├── 04_geography.sql                                  # Q19–Q24: State rankings & metro demand
-│   └── 05_operations.sql                                 # Q25–Q30: FBA vs Merchant & cancellations
+│   ├── 01_quality.sql
+│   ├── 02_sales.sql
+│   ├── 03_product.sql
+│   ├── 04_geography.sql
+│   └── 05_operations.sql
+│
 ├── excel/
-│   └── amazon_validation.xlsx                            # Multi-sheet QA & Control Reconciliation
-├── clean_and_analyze.py                                  # Automated ETL pipeline script
-├── data_quality_reconciliation_report.md                 # Verified control numbers documentation
-├── requirements.txt                                      # Python dependencies
-└── README.md                                             # Project portfolio documentation
-```
-
----
-
-## 🚀 How to Run Locally
-
-### 1. Clone the Repository & Install Dependencies
-```bash
+│   └── amazon_validation.xlsx
+│
+├── clean_and_analyze.py
+├── data_quality_reconciliation_report.md
+├── requirements.txt
+└── README.md
+🚀 How to Run the Project
+1. Clone the Repository
 git clone https://github.com/your-username/amazon-ecommerce-sales-analytics.git
 cd amazon-ecommerce-sales-analytics
+2. Install Dependencies
 pip install -r requirements.txt
-```
-
-### 2. Run Data Cleaning & ETL Pipeline
-```bash
+3. Run the ETL Pipeline
 python clean_and_analyze.py
-```
-*Generates all clean Star Schema tables in `data/processed/` and prints verified KPI control totals.*
-
-### 3. Open the Jupyter EDA Notebook
-```bash
+4. Run the EDA Notebook
 jupyter notebook notebooks/amazon_ecommerce_analysis_and_visualization.ipynb
-```
+5. Open the Power BI Dashboard
+Open:
+powerbi/Amazon_Sales_Dashboard.pbix
+using Power BI Desktop.
+📸 Dashboard Preview
+Add your six final Power BI screenshots to a docs/ folder:
+docs/
+├── page1-executive-overview.png
+├── page2-sales-performance.png
+├── page3-product-analysis.png
+├── page4-geographic-analysis.png
+├── page5-operations.png
+└── page6-b2b-channel-analysis.png
+Then add them to this README:
+## Dashboard Preview
 
-### 4. Open Power BI Dashboard
-* Open **`powerbi/Amazon_Sales_Dashboard.pbix`** in **Power BI Desktop** to explore the 6 interactive pages.
+### Executive Overview
+![Executive Overview](docs/page1-executive-overview.png)
 
----
+### Sales Performance
+![Sales Performance](docs/page2-sales-performance.png)
 
-## 💼 Resume Project Description
+### Product Analysis
+![Product Analysis](docs/page3-product-analysis.png)
 
-**Amazon India E-Commerce Sales & Operations Analytics** | *SQL, Python, Power BI, Excel*
-* Engineered an end-to-end analytics solution on **128,975 e-commerce transactions** (~₹78.7M GMV) analyzing sales trends, product Pareto concentration, logistics, and B2B wholesale channels.
-* Designed and deployed a **Star Schema data model** (`FactOrderLine`, `DimProduct`, `DimGeography`, `DimStatus`, `DimDate`) preventing multi-line grain distortion across 120,378 distinct orders.
-* Authored **30 interview-grade SQL queries** using CTEs, window functions (`LAG`, `DENSE_RANK`, `SUM() OVER ()`), and cross-tab pivots for MoM growth, Pareto 80/20 classification, and operational funnels.
-* Developed an interactive **6-page Power BI dashboard** with 18 DAX measures for Net Revenue, AOV, Cancellation Rates, moving averages, and merchandising decomposition trees.
-* Identified that **18.5% of SKUs generate 80% of revenue** and surfaced a **14.35% cancellation rate** (~₹8.3M leakage), providing 5 evidence-backed management recommendations.
+### Geographic Intelligence
+![Geographic Intelligence](docs/page4-geographic-analysis.png)
+
+### Operations & Logistics
+![Operations](docs/page5-operations.png)
+
+### B2B & Channel Intelligence
+![B2B Analysis](docs/page6-b2b-channel-analysis.png)
+💼 Resume Project
+Amazon India E-Commerce Sales & Operations Analytics
+Python | SQL | Power BI | DAX | Excel
+- Built an end-to-end analytics solution on 128,975 transaction line items and 120,378 distinct orders, analyzing sales, products, geography, fulfillment, and B2B performance.
+- Designed a Star Schema data model using FactOrderLine, DimProduct, DimGeography, DimStatus, and DimDate to prevent multi-line order aggregation errors.
+- Developed 30 SQL analytical queries using CTEs, window functions, ranking, rolling averages, MoM growth, and Pareto analysis.
+- Built a 6-page interactive Power BI dashboard with DAX measures for revenue, AOV, cancellation rate, B2B contribution, product concentration, and operational performance.
+- Identified 14.35% cancellation rate and 18.5% SKU-to-80%-revenue concentration, translating analytical findings into business recommendations.
+🎯 Skills Demonstrated
+- Data Cleaning & Transformation
+- Exploratory Data Analysis
+- Data Quality Auditing
+- Dimensional Data Modeling
+- Star Schema Design
+- SQL Analytics
+- Advanced SQL Window Functions
+- DAX
+- Power BI Dashboard Development
+- Business Intelligence
+- KPI Development
+- Statistical Analysis
+- Data Visualization
+- Business Insights
+- Data Validation
+- Analytical Storytelling
+📌 Dataset
+Dataset:
+Amazon India E-Commerce Sales Dataset — Kaggle
+Dataset identifier:
+thedevastator/unlock-profits-with-e-commerce-sales-data
+👨‍💻 Author
+Chitresh Mathur
+B.Tech — Computer Science & Engineering
+Interests: Data Analytics | Business Intelligence | SQL | Python | Power BI | Data Visualization
+⭐ If you found this project useful
+Feel free to explore the repository, review the SQL queries, inspect the Power BI dashboard, and experiment with the analytical workflow.
