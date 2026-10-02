@@ -247,17 +247,6 @@ python clean_and_analyze.py
 
 ---
 
-## 💼 Resume Project Description
-
-**Amazon India E-Commerce Sales & Operations Analytics** | *Python, SQL, Power BI, DAX, Excel*
-* Engineered an end-to-end analytics solution on **128,975 marketplace transactions** (~₹78.7M GMV) analyzing sales trends, product Pareto concentration, logistics, and B2B wholesale channels.
-* Designed and deployed a **Star Schema data model** (`FactOrderLine`, `DimProduct`, `DimGeography`, `DimStatus`, `DimDate`) preventing multi-line grain distortion across 120,378 distinct orders.
-* Authored **30 interview-grade SQL queries** using CTEs, window functions (`LAG`, `DENSE_RANK`, `SUM() OVER ()`), and cross-tab pivots for MoM growth, Pareto 80/20 classification, and operational funnels.
-* Developed an interactive **6-page Power BI dashboard** with 18 DAX measures for Net Revenue, AOV, Cancellation Rates, moving averages, and merchandising decomposition trees.
-* Identified that **18.5% of SKUs generate 80% of revenue** and surfaced a **14.35% cancellation rate** (~₹8.3M leakage), providing 4 evidence-backed management recommendations.
-
----
-
 <div align="center">
   <b>Project Developed by a Dedicated Data Analyst</b><br>
   Feel free to connect on <a href="https://linkedin.com">LinkedIn</a> or star ⭐ this repository if you found it useful!
