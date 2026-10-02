@@ -1,0 +1,21 @@
+status,status_group,courier_status,status_key
+Cancelled,Cancelled,Unshipped,1
+Shipped - Delivered to Buyer,Delivered/Shipped,Shipped,2
+Shipped,Delivered/Shipped,Shipped,3
+Cancelled,Cancelled,Cancelled,4
+Shipped - Returned to Seller,Returned,Shipped,5
+Shipped - Rejected by Buyer,Returned,Shipped,6
+Shipped,Delivered/Shipped,Unshipped,7
+Shipped,Cancelled,Cancelled,8
+Shipped - Lost in Transit,Operational Loss,Shipped,9
+Shipped - Out for Delivery,Delivered/Shipped,Shipped,10
+Shipped - Returning to Seller,Returned,Shipped,11
+Shipped - Delivered to Buyer,Delivered/Shipped,Unshipped,12
+Shipped - Picked Up,Delivered/Shipped,Shipped,13
+Pending,Pending,Unshipped,14
+Pending,Cancelled,Cancelled,15
+Pending,Pending,Shipped,16
+Shipped - Returned to Seller,Returned,Unshipped,17
+Pending - Waiting for Pick Up,Pending,Unshipped,18
+Shipped - Damaged,Operational Loss,Shipped,19
+Shipping,Delivered/Shipped,Unshipped,20
