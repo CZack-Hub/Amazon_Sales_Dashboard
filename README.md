@@ -249,5 +249,5 @@ python clean_and_analyze.py
 
 <div align="center">
   <b>Project Developed by a Dedicated Data Analyst</b><br>
-  Feel free to connect on <a href="https://linkedin.com">LinkedIn</a> or star ⭐ this repository if you found it useful!
+  Feel free to connect on <a href="https://www.linkedin.com/in/chitresh0306/">LinkedIn</a> or star ⭐ this repository if you found it useful!
 </div>
